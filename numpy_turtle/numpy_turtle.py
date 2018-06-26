@@ -1,4 +1,4 @@
-from typing import Union, Tuple
+from typing import Tuple
 
 import numpy as np
 from skimage.draw import line, line_aa
@@ -7,7 +7,7 @@ _TAU = np.pi * 2
 
 
 class Turtle:
-    def __init__(self, array, deg: bool=False, aa: bool=False,):
+    def __init__(self, array, deg: bool=False, aa: bool=False):
         """Draw on a NumPy array using turtle graphics.
 
         Starts at (0, 0) (top-left corner) with a direction of 0 (pointing
@@ -38,9 +38,9 @@ class Turtle:
         self.__stack = []
 
         if np.issubdtype(array.dtype, np.integer):
-            self.default_color = np.iinfo(array.dtype).max
+            self.__color = np.iinfo(array.dtype).max
         elif np.issubdtype(array.dtype, np.floating):
-            self.default_color = np.finfo(array.dtype).max
+            self.__color = np.finfo(array.dtype).max
 
     def __in_array(self, r=None, c=None):
         r = self.__r if r is None else r
@@ -50,7 +50,7 @@ class Turtle:
     def __clip_coordinate(self, c, axis):
         return min(max(c, 0), self.array.shape[axis] - 1)
 
-    def __draw_line(self, color, new_c, new_r):
+    def __draw_line(self, new_c, new_r):
         r0 = int(round(self.__clip_coordinate(self.__r, 0)))
         c0 = int(round(self.__clip_coordinate(self.__c, 1)))
         r1 = int(round(self.__clip_coordinate(new_r, 0)))
@@ -58,12 +58,12 @@ class Turtle:
 
         if self.aa:
             rr, cc, val = line_aa(r0, c0, r1, c1)
-            self.array[rr, cc] = (val / 255 * color).astype(self.array.dtype)
+            self.array[rr, cc] = (val / 255 * self.__color).astype(self.array.dtype)
         else:
             rr, cc = line(r0, c0, r1, c1)
-            self.array[rr, cc] = color
+            self.array[rr, cc] = self.__color
 
-    def forward(self, distance: float, color: Union[int, None]=None):
+    def forward(self, distance: float):
         """Move in the current direction and draw a line with Euclidian
         distance.
 
@@ -71,16 +71,12 @@ class Turtle:
         ----------
         distance : int
             The distance to move.
-        color : :obj:`Union[int, None]`, optional
-            Line color, default is array's dtype max value, i.e. black.
         """
-        if color is None:
-            color = self.default_color
 
         new_r = self.__r + distance * np.cos(self.__direction)
         new_c = self.__c + distance * np.sin(self.__direction)
 
-        self.__draw_line(color, int(round(new_c)), int(round(new_r)))
+        self.__draw_line(int(round(new_c)), int(round(new_r)))
 
         self.__r = new_r
         self.__c = new_c
@@ -125,3 +121,12 @@ class Turtle:
     @position.setter
     def position(self, rc: Tuple[int, int]):
         self.__r, self.__c = rc
+
+    @property
+    def color(self) -> float:
+        """float: Grayscale color"""
+        return self.__color
+
+    @color.setter
+    def color(self, c: float):
+        self.__color = c

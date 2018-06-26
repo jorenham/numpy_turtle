@@ -28,10 +28,10 @@ class TestTurtleUint8(TestCase):
             self.turtle.rotate(0.5 * np.pi)
 
         full_square = np.zeros(self.array.shape, self.array.dtype)
-        full_square[0:self.size, 0] = self.turtle.default_color
-        full_square[0:self.size, self.size - 1] = self.turtle.default_color
-        full_square[0, 0:self.size] = self.turtle.default_color
-        full_square[self.size - 1, 0:self.size] = self.turtle.default_color
+        full_square[0:self.size, 0] = self.turtle.color
+        full_square[0:self.size, self.size - 1] = self.turtle.color
+        full_square[0, 0:self.size] = self.turtle.color
+        full_square[self.size - 1, 0:self.size] = self.turtle.color
 
         npt.assert_array_equal(self.array, full_square)
 
@@ -39,5 +39,5 @@ class TestTurtleUint8(TestCase):
         self.turtle.rotate(0.25 * np.pi)
         self.turtle.forward(np.sqrt(2 * 10**2))
 
-        eye = np.eye(self.size, dtype=self.array.dtype) * self.turtle.default_color
+        eye = np.eye(self.size, dtype=self.array.dtype) * self.turtle.color
         npt.assert_array_equal(self.array, eye)
