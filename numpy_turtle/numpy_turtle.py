@@ -51,10 +51,10 @@ class Turtle:
         return min(max(c, 0), self.array.shape[axis] - 1)
 
     def __draw_line(self, color, new_c, new_r):
-        r0 = self.__clip_coordinate(self.__r, 0)
-        c0 = self.__clip_coordinate(self.__c, 1)
-        r1 = self.__clip_coordinate(new_r, 0)
-        c1 = self.__clip_coordinate(new_c, 1)
+        r0 = int(round(self.__clip_coordinate(self.__r, 0)))
+        c0 = int(round(self.__clip_coordinate(self.__c, 1)))
+        r1 = int(round(self.__clip_coordinate(new_r, 0)))
+        c1 = int(round(self.__clip_coordinate(new_c, 1)))
 
         if self.aa:
             rr, cc, val = line_aa(r0, c0, r1, c1)
@@ -77,10 +77,10 @@ class Turtle:
         if color is None:
             color = self.default_color
 
-        new_r = self.__r + int(round(distance * np.cos(self.__direction)))
-        new_c = self.__c + int(round(distance * np.sin(self.__direction)))
+        new_r = self.__r + distance * np.cos(self.__direction)
+        new_c = self.__c + distance * np.sin(self.__direction)
 
-        self.__draw_line(color, new_c, new_r)
+        self.__draw_line(color, int(round(new_c)), int(round(new_r)))
 
         self.__r = new_r
         self.__c = new_c
