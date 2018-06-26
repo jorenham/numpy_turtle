@@ -13,3 +13,10 @@ Inspired by the [turtle](https://docs.python.org/3.6/library/turtle.html) librar
 - Fractal plant ([code](numpy_turtle/examples/fractal_plant.py)):
 
   <img src="numpy_turtle/examples/images/fractal_plant.png?raw=true" width=33%>
+
+
+## Installation:
+
+```bash
+pip3 install numpy-turtle
+```
