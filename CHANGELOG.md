@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.2] - 2019-09-29
+### Added
+- The `Turtle` class now has color support.
+- The examples work with RGBA images now.
+
 ## [0.1] - 2018-06-26
 ### Added
 - The `Turtle` class as wrapper for a two-dimensional (grayscale) NumPy array. 

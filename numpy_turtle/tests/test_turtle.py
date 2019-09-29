@@ -9,7 +9,7 @@ from numpy_turtle import Turtle
 class TestTurtleUint8(TestCase):
     def setUp(self):
         self.size = 10
-        self.array = np.zeros((self.size, self.size), dtype=np.uint8)
+        self.array = np.zeros((self.size, self.size, 3), dtype=np.uint8)
         self.turtle = Turtle(self.array)
 
     def test_pos_forward(self):
@@ -39,5 +39,9 @@ class TestTurtleUint8(TestCase):
         self.turtle.rotate(0.25 * np.pi)
         self.turtle.forward(np.sqrt(2 * 10**2))
 
-        eye = np.eye(self.size, dtype=self.array.dtype) * self.turtle.color
-        npt.assert_array_equal(self.array, eye)
+        eye = np.eye(self.size, dtype=self.array.dtype)
+        eye3 = np.zeros_like(self.array)
+        for i, c in enumerate(self.turtle.color):
+            eye3[:, :, i] = eye * c
+
+        npt.assert_array_equal(self.array, eye3)

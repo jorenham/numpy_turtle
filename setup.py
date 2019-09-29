@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='numpy-turtle',
-    version='0.1',
+    version='0.2',
     packages=['numpy_turtle'],
     python_requires='>=3.5',
     install_requires=['numpy>=1.13.1', 'scikit_image>=0.13.1'],

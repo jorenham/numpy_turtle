@@ -1,13 +1,15 @@
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 from skimage.draw import line, line_aa
 
 _TAU = np.pi * 2
 
+Color = Union[int, float, Tuple[int, ...], Tuple[float, ...]]
+
 
 class Turtle:
-    def __init__(self, array, deg: bool=False, aa: bool=False):
+    def __init__(self, array: np.ndarray, deg: bool = False, aa: bool = False):
         """Draw on a NumPy array using turtle graphics.
 
         Starts at (0, 0) (top-left corner) with a direction of 0 (pointing
@@ -16,18 +18,23 @@ class Turtle:
         Parameters
         ----------
         array: np.ndarray
-            The 2D array to write to
+            The 2D array to write to. Can be either of shape h x w (grayscale),
+            h x w x c (e.g. rgb for c=3 channels).
+            The dtype is used to determine the color depth of each channel:
+
+              * `bool` for 2 colors.
+              * All `np.integer` subtypes for discrete depth, ranging from 0 to
+                its max value (e.g. `np.uint8` for values in 0 - 255).
+              * All `np.floating` subtypes for continuous depth, ranging from 0
+                to 1.
+
         deg : :obj:`bool`, optional
             Use degrees instead of radians.
         aa : :obj:`bool`, optional
             Enable anti-aliasing.
         """
-        assert type(array) is np.ndarray, 'Array should be a NumPy ndarray'
-        assert array.ndim == 2, 'Only 2D arrays are supported'
-        assert (
-                np.issubdtype(array.dtype, np.integer) or
-                np.issubdtype(array.dtype, np.floating)
-        ), '{} is unsupported'.format(array.dtype)
+        if type(array) is not np.ndarray:
+            raise TypeError('Array should be a NumPy ndarray')
 
         self.array = array
         self.aa = aa
@@ -37,10 +44,32 @@ class Turtle:
         self.__r, self.__c = 0, 0
         self.__stack = []
 
-        if np.issubdtype(array.dtype, np.integer):
-            self.__color = np.iinfo(array.dtype).max
+        if array.ndim == 2:
+            self.__channels = 1
+        elif array.ndim == 3:
+            self.__channels = array.shape[2]
+        else:
+            raise TypeError('Array does not have 2 or 3 dimensions')
+
+        if array.dtype == np.dtype(bool):
+            self.__depth = 1
+            self.__dtype = bool
+        elif np.issubdtype(array.dtype, np.integer):
+            self.__depth = np.iinfo(array.dtype).max
+            self.__dtype = int
         elif np.issubdtype(array.dtype, np.floating):
-            self.__color = np.finfo(array.dtype).max
+            self.__depth = 1.0
+            self.__dtype = float
+        else:
+            raise TypeError(
+                'Array should have a bool, int-like, or float-like dtype'
+            )
+
+        # color initially the max depth (white).
+        if self.__channels == 1:
+            self.__color = self.__depth
+        else:
+            self.__color = np.full(self.__channels, self.__depth, self.__dtype)
 
     def __in_array(self, r=None, c=None):
         r = self.__r if r is None else r
@@ -58,10 +87,15 @@ class Turtle:
 
         if self.aa:
             rr, cc, val = line_aa(r0, c0, r1, c1)
-            self.array[rr, cc] = (val / 255 * self.__color).astype(self.array.dtype)
         else:
             rr, cc = line(r0, c0, r1, c1)
-            self.array[rr, cc] = self.__color
+            val = 1
+
+        if self.__channels == 1:
+            self.array[rr, cc] = val * self.__color
+        else:
+            for c in range(self.__channels):
+                self.array[rr, cc, c] = val * self.__color[c]
 
     def forward(self, distance: float):
         """Move in the current direction and draw a line with Euclidian
@@ -123,10 +157,19 @@ class Turtle:
         self.__r, self.__c = rc
 
     @property
-    def color(self) -> float:
-        """float: Grayscale color"""
-        return self.__color
+    def color(self) -> Color:
+        """int, float, tuple of int or tuple of float: Grayscale color"""
+        if self.__channels == 1:
+            return self.__color
+        else:
+            return tuple(self.__color)
 
     @color.setter
-    def color(self, c: float):
-        self.__color = c
+    def color(self, c: Color):
+        if not np.isscalar(c) and len(c) != self.__channels:
+            raise TypeError('Invalid amount of color values')
+        for _c in [c] if np.isscalar(c) else c:
+            if _c < 0 or _c > self.__depth:
+                raise ValueError('Color value out of range')
+
+        self.__color = np.array(c, dtype=self.__dtype)
