@@ -7,7 +7,7 @@ _TAU = np.pi * 2
 
 
 class Turtle:
-    def __init__(self, array, deg: bool=False, aa: bool=False):
+    def __init__(self, array, deg: bool = False, aa: bool = False):
         """Draw on a NumPy array using turtle graphics.
 
         Starts at (0, 0) (top-left corner) with a direction of 0 (pointing
