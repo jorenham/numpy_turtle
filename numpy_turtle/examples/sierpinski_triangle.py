@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.misc import toimage
+from skimage.io import imsave
 
 from numpy_turtle import Turtle, l_system
 
@@ -20,12 +20,13 @@ def main():
     rows = int(np.ceil(cols * np.sin(angle / 2)))
     n = 8
 
-    a = np.zeros((rows, cols))
+    a = np.zeros((rows, cols, 4))
     s = l_system.grow(axiom, rules, n)
 
     t = Turtle(a)
     t.position = rows, 0
     t.rotate(np.pi / 2)
+    t.color = (0, 0, 0, 1)
 
     for s_n in s:
         if s_n == 'F' or s_n == 'G':
@@ -35,7 +36,7 @@ def main():
         elif s_n == '+':
             t.rotate(-angle)
 
-    toimage(a).show()
+    imsave('images/sierpinski_triangle.png', a)
 
 
 if __name__ == '__main__':

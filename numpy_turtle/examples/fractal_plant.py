@@ -1,5 +1,6 @@
 import numpy as np
-from scipy.misc import toimage
+from matplotlib import pyplot as plt
+from skimage.io import imsave
 
 from numpy_turtle import Turtle, l_system
 
@@ -17,12 +18,13 @@ def main():
     padding = 32
     n = 6
 
-    a = np.zeros((rows, cols))
+    a = np.zeros((rows, cols, 4))
     s = l_system.grow(axiom, rules, n)
 
-    t = Turtle(a)
+    t = Turtle(a, aa=True)
     t.position = rows - padding, padding
     t.rotate(np.pi - angle)
+    t.color = (0, 1, 0, 1)
 
     for s_n in s:
         if s_n == 'F':
@@ -36,7 +38,7 @@ def main():
         elif s_n == ']':
             t.pop()
 
-    toimage(a).show()
+    imsave('images/fractal_plant.png', a)
 
 
 if __name__ == '__main__':
