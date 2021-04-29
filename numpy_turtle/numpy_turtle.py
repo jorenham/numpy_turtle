@@ -1,3 +1,5 @@
+
+#adapted from https://github.com/jorenham/numpy_turtle/blob/master/numpy_turtle/numpy_turtle.py
 from typing import Tuple, Union
 
 import numpy as np
@@ -11,23 +13,19 @@ Color = Union[int, float, Tuple[int, ...], Tuple[float, ...]]
 class Turtle:
     def __init__(self, array: np.ndarray, deg: bool = False, aa: bool = False):
         """Draw on a NumPy array using turtle graphics.
-
         Starts at (0, 0) (top-left corner) with a direction of 0 (pointing
         down).
-
         Parameters
         ----------
         array: np.ndarray
             The 2D array to write to. Can be either of shape h x w (grayscale),
             h x w x c (e.g. rgb for c=3 channels).
             The dtype is used to determine the color depth of each channel:
-
               * `bool` for 2 colors.
               * All `np.integer` subtypes for discrete depth, ranging from 0 to
                 its max value (e.g. `np.uint8` for values in 0 - 255).
               * All `np.floating` subtypes for continuous depth, ranging from 0
                 to 1.
-
         deg : :obj:`bool`, optional
             Use degrees instead of radians.
         aa : :obj:`bool`, optional
@@ -97,10 +95,12 @@ class Turtle:
             for c in range(self.__channels):
                 self.array[rr, cc, c] = val * self.__color[c]
 
+    def stacklen(self):
+        return len(self.__stack)
+
     def forward(self, distance: float):
         """Move in the current direction and draw a line with Euclidian
         distance.
-
         Parameters
         ----------
         distance : int
@@ -117,7 +117,6 @@ class Turtle:
 
     def rotate(self, angle: float):
         """Rotate the turtle by a given angle
-
         Parameters
         ----------
         angle
@@ -134,8 +133,10 @@ class Turtle:
 
     def pop(self):
         """Restore the state that was last pushed.
+           allow for handling of pops of empty stacks
         """
-        self.__direction, self.__r, self.__c = self.__stack.pop()
+        if len(self.__stack) != 0:
+            self.__direction, self.__r, self.__c = self.__stack.pop()
 
     def reset(self):
         """Set direction and position to 0 and empty the stack.
