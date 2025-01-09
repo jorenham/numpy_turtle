@@ -4,37 +4,37 @@ import numpy as np
 
 import numpy_turtle as np_turtle
 
-AXIOM = "X"
+AXIOM = "VZFFF"
 RULES = {
-    "X": "F+[[X]-X]-F[-FX]+X",
-    "F": "FF",
+    "V": "[+++W][---W]YV",
+    "W": "+X[-W]Z",
+    "X": "-W[+X]Z",
+    "Y": "YZ",
+    "Z": "[-FFF][+FFF]F",
 }
 
-COLS = 512
-ROWS = 512
-MARGIN = 32
+COLS = 720
+ROWS = 666
+MARGIN = 64
 
-ANGLE = np.pi / 7
-COLOR = 0, 255, 0, 255
+ANGLE = np.pi / 9
+COLOR = 160, 82, 45, 255
+ITER = 8
 
 OUT = Path(__file__).parent / "images" / (Path(__file__).stem + ".png")
 
 
 def main() -> None:
-    """Create a fractal plant."""
-    n = 6
-
+    """Bracketed L-system conifer."""
     array = np.zeros((ROWS, COLS, len(COLOR)), dtype=np.uint8)
-    system = np_turtle.l_system.grow(AXIOM, RULES, n)
+    system = np_turtle.l_system.grow(AXIOM, RULES, ITER)
 
-    turtle = np_turtle.Turtle(array, aa=True)
-    turtle.color = COLOR
-    turtle.position = ROWS - MARGIN, MARGIN
-    turtle.rotate(np.pi - ANGLE)
+    turtle = np_turtle.Turtle(array, aa=False, color=COLOR).rotate(np.pi)
+    turtle.position = ROWS - MARGIN, COLS // 2 - 16
 
     for s_n in system:
-        if s_n == "F":
-            turtle.forward(3)
+        if s_n.isalpha():
+            turtle.forward(14)
         elif s_n == "-":
             turtle.rotate(-ANGLE)
         elif s_n == "+":
