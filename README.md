@@ -7,16 +7,16 @@ Inspired by the [turtle](https://docs.python.org/3.6/library/turtle.html) librar
 
 - Sierpinski triangle ([code](numpy_turtle/examples/sierpinski_triangle.py)):
 
-  <img src="numpy_turtle/examples/images/sierpinski_triangle.png?raw=true" width=33%>
+  <img src="examples/images/sierpinski_triangle.png?raw=true" width=33%>
 
 
 - Fractal plant ([code](numpy_turtle/examples/fractal_plant.py)):
 
-  <img src="numpy_turtle/examples/images/fractal_plant.png?raw=true" width=33%>
+  <img src="examples/images/fractal_plant.png?raw=true" width=33%>
 
 
 ## Installation:
 
 ```bash
-pip3 install numpy-turtle
+pip install numpy-turtle
 ```
