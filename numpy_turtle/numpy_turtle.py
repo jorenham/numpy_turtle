@@ -1,175 +1,259 @@
-from typing import Tuple, Union
+import math
+import sys
+from collections import deque
+from pathlib import Path
+from typing import (
+    Any,
+    Final,
+    Generic,
+    Literal,
+    Self,
+    SupportsIndex,
+    TypeAlias,
+    TypeVar,
+    cast,
+)
 
 import numpy as np
-from skimage.draw import line, line_aa
+import numpy.typing as npt
+from skimage.draw import line, line_aa  # pyright: ignore[reportUnknownVariableType]
+from skimage.io import imsave  # pyright: ignore[reportUnknownVariableType]
 
-_TAU = np.pi * 2
+_ToColor: TypeAlias = (
+    float
+    | tuple[float]
+    | tuple[float, float, float]
+    | tuple[float, float, float, float]
+)
 
-Color = Union[int, float, Tuple[int, ...], Tuple[float, ...]]
+_Channels: TypeAlias = Literal[1, 3, 4]
+
+_ScalarT_co = TypeVar(
+    "_ScalarT_co",
+    bound=np.bool_ | np.integer[Any] | np.floating[Any],
+    covariant=True,
+)
 
 
-class Turtle:
-    def __init__(self, array: np.ndarray, deg: bool = False, aa: bool = False):
-        """Draw on a NumPy array using turtle graphics.
+def _line(
+    r0: int,
+    c0: int,
+    r1: int,
+    c1: int,
+    *,
+    aa: bool = False,
+) -> tuple[
+    np.ndarray[tuple[int], np.dtype[np.intp]],
+    np.ndarray[tuple[int], np.dtype[np.intp]],
+    np.ndarray[tuple[int], np.dtype[np.float64]] | int,
+]:
+    if aa:
+        return line_aa(r0, c0, r1, c1)  # pyright: ignore[reportUnknownVariableType]
+    return (*line(r0, c0, r1, c1), 1)  # pyright: ignore[reportUnknownVariableType]
 
-        Starts at (0, 0) (top-left corner) with a direction of 0 (pointing
-        down).
 
-        Parameters
-        ----------
-        array: np.ndarray
-            The 2D array to write to. Can be either of shape h x w (grayscale),
-            h x w x c (e.g. rgb for c=3 channels).
-            The dtype is used to determine the color depth of each channel:
+class Turtle(Generic[_ScalarT_co]):
+    """Draw on a 2-d NumPy array using turtle graphics.
 
-              * `bool` for 2 colors.
-              * All `np.integer` subtypes for discrete depth, ranging from 0 to
-                its max value (e.g. `np.uint8` for values in 0 - 255).
-              * All `np.floating` subtypes for continuous depth, ranging from 0
-                to 1.
+    Starts at (0, 0) (top-left corner) with a direction of 0 (pointing
+    down).
 
-        deg : :obj:`bool`, optional
-            Use degrees instead of radians.
-        aa : :obj:`bool`, optional
-            Enable anti-aliasing.
-        """
+    Parameters
+    ----------
+    array: np.ndarray
+        The 2D array to write to. Can be either of shape `(h, w)` (grayscale),
+        `(h, w, c)` (RGB for `c=3` channels, or RGBA for `c=4`).
+        The dtype is used to determine the color depth of each channel:
+
+            * `bool` for 2 colors.
+            * All `np.integer` subtypes for discrete depth, ranging from 0 to
+              its max value (e.g. `np.uint8` for values in 0 - 255).
+            * All `np.floating` subtypes for continuous depth, ranging from 0
+              to 1.
+
+    deg : :obj:`bool`, optional
+        Use degrees instead of radians.
+    aa : :obj:`bool`, optional
+        Enable anti-aliasing.
+    """
+
+    array: Final[npt.NDArray[_ScalarT_co]]
+    deg: Final[bool]
+    aa: Final[bool]
+
+    _channels: Final[_Channels]
+    _depth: Final[float]
+    _color: Final[
+        np.ndarray[tuple[()], np.dtype[_ScalarT_co]]
+        | np.ndarray[tuple[int], np.dtype[_ScalarT_co]]
+    ]
+
+    # row, column, direction
+    _state: tuple[float, float, float]
+    _stack: deque[tuple[float, float, float]]
+
+    def __init__(
+        self,
+        /,
+        array: npt.NDArray[_ScalarT_co],
+        *,
+        deg: bool = False,
+        aa: bool = False,
+        color: _ToColor | None = None,
+    ) -> None:
         if type(array) is not np.ndarray:
-            raise TypeError('Array should be a NumPy ndarray')
+            raise TypeError("Array should be a NumPy ndarray")
 
         self.array = array
-        self.aa = aa
         self.deg = deg
+        self.aa = aa
 
-        self.__direction = 0
-        self.__r, self.__c = 0, 0
-        self.__stack = []
+        self._state = 0, 0, 0
+        self._stack = deque(maxlen=sys.getrecursionlimit())
 
         if array.ndim == 2:
-            self.__channels = 1
+            self._channels = 1
         elif array.ndim == 3:
-            self.__channels = array.shape[2]
+            _, _, c = array.shape
+            if c not in {1, 3, 4}:
+                raise ValueError("Array should have 1, 3, or 4 channels")
+            self._channels = cast("_Channels", c)
         else:
-            raise TypeError('Array does not have 2 or 3 dimensions')
+            raise TypeError("Array does not have 2 or 3 dimensions")
 
-        if array.dtype == np.dtype(bool):
-            self.__depth = 1
-            self.__dtype = bool
-        elif np.issubdtype(array.dtype, np.integer):
-            self.__depth = np.iinfo(array.dtype).max
-            self.__dtype = int
+        sct = array.dtype.type
+        if issubclass(sct, np.bool_):
+            self._depth = 1
+        elif issubclass(sct, np.integer):
+            self._depth = np.iinfo(sct).max
         elif np.issubdtype(array.dtype, np.floating):
-            self.__depth = 1.0
-            self.__dtype = float
+            self._depth = 1.0
         else:
-            raise TypeError(
-                'Array should have a bool, int-like, or float-like dtype'
-            )
+            raise TypeError("Array should have a bool, int-like, or float-like dtype")
 
-        # color initially the max depth (white).
-        if self.__channels == 1:
-            self.__color = self.__depth
+        if self._channels == 1:
+            self._color = np.empty((), sct)
         else:
-            self.__color = np.full(self.__channels, self.__depth, self.__dtype)
+            self._color = np.empty(self._channels, sct)
 
-    def __in_array(self, r=None, c=None):
-        r = self.__r if r is None else r
-        c = self.__c if c is None else c
-        return 0 <= r < self.array.shape[0] and 0 <= c < self.array.shape[1]
+        # color initially the max depth on all channels (white).
+        self._color[:] = self._depth
 
-    def __clip_coordinate(self, c, axis):
-        return min(max(c, 0), self.array.shape[axis] - 1)
+        if color is not None:
+            self.color = color
 
-    def __draw_line(self, new_c, new_r):
-        r0 = int(round(self.__clip_coordinate(self.__r, 0)))
-        c0 = int(round(self.__clip_coordinate(self.__c, 1)))
-        r1 = int(round(self.__clip_coordinate(new_r, 0)))
-        c1 = int(round(self.__clip_coordinate(new_c, 1)))
+    @property
+    def position(self, /) -> tuple[float, float]:
+        """:obj:`tuple` of :obj:`float`: Current row and column position."""
+        return self._state[:2]
 
-        if self.aa:
-            rr, cc, val = line_aa(r0, c0, r1, c1)
-        else:
-            rr, cc = line(r0, c0, r1, c1)
-            val = 1
+    @position.setter
+    def position(self, rc: tuple[float, float], /) -> None:
+        max_r, max_c, *_ = self.array.shape
+        new_r, new_c = rc
+        if not (0 <= new_r < max_r) or not (0 <= new_c < max_c):
+            raise ValueError("Position out of bounds")
 
-        if self.__channels == 1:
-            self.array[rr, cc] = val * self.__color
-        else:
-            for c in range(self.__channels):
-                self.array[rr, cc, c] = val * self.__color[c]
+        _, _, d = self._state
+        self._state = new_r, new_c, d
 
-    def forward(self, distance: float):
-        """Move in the current direction and draw a line with Euclidian
-        distance.
+    @property
+    def direction(self, /) -> float:
+        """float: Get the current direction in radians (or degrees)."""
+        d = self._state[2]
+        return 360 * d / math.tau if self.deg else d
+
+    @property
+    def color(self, /) -> float | tuple[float, ...]:
+        """int, float, tuple of int or tuple of float: Grayscale color."""
+        colorlist = self._color.tolist()
+        return tuple(colorlist) if isinstance(colorlist, list) else colorlist
+
+    @color.setter
+    def color(self, c: _ToColor, /) -> None:
+        if np.size(c) != self._channels:
+            raise TypeError("unexpected color channels count")
+
+        c_ = np.array(c, dtype=self.array.dtype)
+        if np.any((c_ < 0) | (c_ > self._depth)):
+            raise ValueError("Color value out of range")
+
+        assert c_.ndim in {0, 1}
+        self._color = c_  # pyright: ignore[reportAttributeAccessIssue]
+
+    def __clip(self, c: float, axis: SupportsIndex) -> int:
+        return min(max(round(c), 0), self.array.shape[axis] - 1)
+
+    def __draw(self, new_r: float, new_c: float, /) -> None:
+        r, c, _ = self._state
+        rr, cc, val = _line(
+            self.__clip(r, 0),
+            self.__clip(c, 1),
+            self.__clip(new_r, 0),
+            self.__clip(new_c, 1),
+            aa=self.aa,
+        )
+        self.array[rr, cc] = np.multiply.outer(val, self._color)
+
+    def forward(self, /, distance: float) -> Self:
+        """
+        Move in the current direction and draw a line with Euclidian distance.
 
         Parameters
         ----------
-        distance : int
+        distance : float
             The distance to move.
         """
+        r, c, d = self._state
+        new_r = r + distance * math.cos(d)
+        new_c = c + distance * math.sin(d)
 
-        new_r = self.__r + distance * np.cos(self.__direction)
-        new_c = self.__c + distance * np.sin(self.__direction)
+        self.__draw(new_r, new_c)
+        self._state = new_r, new_c, d
 
-        self.__draw_line(int(round(new_c)), int(round(new_r)))
+        return self
 
-        self.__r = new_r
-        self.__c = new_c
+    def rotate(self, /, angle: float) -> Self:
+        """Rotate the turtle by a given angle.
 
-    def rotate(self, angle: float):
-        """Rotate the turtle by a given angle
+        If the `Turtle` was created with `deg=False` (default), then the angle must
+        be specified in radians. Otherwise, the angle must be specified in degrees.
 
         Parameters
         ----------
         angle
             Angle to rotate. Positive rotates left, negative right.
         """
-        angle_rad = np.deg2rad(angle) if self.deg else angle
-        self.__direction += angle_rad % _TAU
-
-    def push(self):
-        """Push the current state (direction and position) to the top of the
-        stack.
-        """
-        self.__stack.append((self.__direction, self.__r, self.__c))
-
-    def pop(self):
-        """Restore the state that was last pushed.
-        """
-        self.__direction, self.__r, self.__c = self.__stack.pop()
-
-    def reset(self):
-        """Set direction and position to 0 and empty the stack.
-        """
-        del self.__stack[:]
-
-    @property
-    def direction(self) -> float:
-        """float: Get the current direction in radians (or degrees)."""
-        return np.rad2deg(self.__direction) if self.deg else self.__direction
-
-    @property
-    def position(self) -> Tuple[int, int]:
-        """:obj:`tuple` of :obj:`int`: Current row and column position."""
-        return self.__r, self.__c
-
-    @position.setter
-    def position(self, rc: Tuple[int, int]):
-        self.__r, self.__c = rc
-
-    @property
-    def color(self) -> Color:
-        """int, float, tuple of int or tuple of float: Grayscale color"""
-        if self.__channels == 1:
-            return self.__color
+        if self.deg:
+            if not (-360 < angle < 360):
+                raise ValueError("Angle must lie within (-360, 360)")
+            dd = angle * math.tau / 360
         else:
-            return tuple(self.__color)
+            if not (-math.tau < angle < math.tau):
+                raise ValueError("Angle must lie within (-2 * pi, 2 * pi)")
+            dd = angle
 
-    @color.setter
-    def color(self, c: Color):
-        if not np.isscalar(c) and len(c) != self.__channels:
-            raise TypeError('Invalid amount of color values')
-        for _c in [c] if np.isscalar(c) else c:
-            if _c < 0 or _c > self.__depth:
-                raise ValueError('Color value out of range')
+        r, c, d = self._state
+        self._state = r, c, (d + dd) % math.tau
 
-        self.__color = np.array(c, dtype=self.__dtype)
+        return self
+
+    def push(self, /) -> Self:
+        """Push the current state (direction and position) to the top of the stack."""
+        self._stack.append(self._state)
+        return self
+
+    def pop(self, /) -> Self:
+        """Restore the state that was last pushed."""
+        self._state = self._stack.pop()
+        return self
+
+    def reset(self, /) -> Self:
+        """Set direction and position to 0 and empty the stack."""
+        self._state = 0, 0, 0
+        self._stack.clear()
+        return self
+
+    def save_image(self, path: str | Path, /, *, check_contrast: bool = True) -> None:
+        """Render the current array to an image and save it to a file."""
+        imsave(path, self.array, check_contrast=check_contrast)

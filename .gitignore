@@ -1,18 +1,25 @@
-# Compiled python modules.
-*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Setuptools distribution / packaging.
-/dist/
-/build/
+# Distribution / packaging
+build/
+dist/
+site/
 
-# Python egg metadata, regenerated from source files by setuptools.
-/*.egg-info
+# Cache
+.cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.tox/
 
-# Virtualenv
-/venv/
+# Environments
+.env
+.venv/
+venv/
 
-# Tox
-/.tox
-
-# JetBrains
-/.idea/
+# IntelliJ
+.idea/
+.run/

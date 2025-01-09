@@ -1,16 +1,16 @@
-from typing import Dict
+__all__ = ["grow"]
 
 
-def grow(axiom: str, rules: Dict[str, str], n: int) -> str:
+def grow(axiom: str, rules: dict[str, str], n: int) -> str:
     """Grow an L-system from an axiom by iteratively applying rules.
 
     More info:
     https://en.wikipedia.org/wiki/L-system
 
     Growing the original Algea:
-    >>> grow('A', {'A': 'AB', 'B': 'A'}, 5)
+    >>> grow("A", {"A": "AB", "B": "A"}, 5)
     'ABAABABAABAAB'
-    >>> grow('A', {'A': 'AB', 'B': 'A'}, 6)
+    >>> grow("A", {"A": "AB", "B": "A"}, 6)
     'ABAABABAABAABABAABABA'
 
     Parameters
@@ -21,6 +21,7 @@ def grow(axiom: str, rules: Dict[str, str], n: int) -> str:
         Dictionary of reqrite rules, i.e. key becomes value
     n : int
         Amount of iterations
+
     Returns
     -------
     str
@@ -28,5 +29,5 @@ def grow(axiom: str, rules: Dict[str, str], n: int) -> str:
     """
     s = axiom
     for _ in range(n):
-        s = ''.join(rules[s_n] if s_n in rules else s_n for s_n in s)
+        s = "".join(rules.get(s_n, s_n) for s_n in s)
     return s
