@@ -10,9 +10,9 @@ RULES = {
     "F": "FF",
 }
 
-COLS = 512
-ROWS = 512
-MARGIN = 32
+COLS = 666
+ROWS = 666
+MARGIN = 64
 
 ANGLE = np.pi / 7
 COLOR = 0, 255, 0, 255
@@ -34,7 +34,7 @@ def main() -> None:
 
     for s_n in system:
         if s_n == "F":
-            turtle.forward(3)
+            turtle.forward(4)
         elif s_n == "-":
             turtle.rotate(-ANGLE)
         elif s_n == "+":
