@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+...
+
+## [0.3] - 2025-01-09
+
 ### Added
 
 - `Turtle.save_iamge()`
+- Koch curve example
+- Fractal conifer example
 
 ### Changed
 
@@ -41,5 +47,6 @@ It can draw lines on its array using [turtle graphics].
 [L-system]: https://en.wikipedia.org/wiki/L-system
 
 [unreleased]: https://github.com/jorenham/numpy_turtle/compare/0.2...HEAD
+[0.3]: https://github.com/jorenham/numpy_turtle/compare/0.2...0.3
 [0.2]: https://github.com/jorenham/numpy_turtle/compare/0.1...0.2
 [0.1]: https://github.com/jorenham/numpy_turtle/releases/tag/0.1
