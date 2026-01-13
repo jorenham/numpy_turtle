@@ -9,14 +9,14 @@ Inspired by the [turtle](https://docs.python.org/3.6/library/turtle.html) librar
 <tr>
 <td>
 
-Koch curve ([code](numpy_turtle/examples/koch_curve_c.py)):
+Koch curve ([code](examples/koch_curve_c.py)):
 
 ![Koch curve](examples/images/koch_curve_c.png)
 
 </td>
 <td>
 
-Sierpinski triangle ([code](numpy_turtle/examples/sierpinski_triangle.py)):
+Sierpinski triangle ([code](examples/sierpinski_triangle.py)):
 
 ![Sierpinski triangle](examples/images/sierpinski_triangle.png)
 
@@ -25,14 +25,14 @@ Sierpinski triangle ([code](numpy_turtle/examples/sierpinski_triangle.py)):
 <tr>
 <td>
 
-Fractal plant ([code](numpy_turtle/examples/fractal_plant.py)):
+Fractal plant ([code](examples/fractal_plant.py)):
 
 ![Fractal plant](examples/images/fractal_plant.png)
 
 </td>
 <td>
 
-Fractal conifer ([code](numpy_turtle/examples/conifer.py)):
+Fractal conifer ([code](examples/conifer.py)):
 
 ![Fractal conifer](examples/images/conifer.png)
 
